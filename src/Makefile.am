@@ -45,13 +45,17 @@ LIBS     = @LIBICONV@ @LIBINTL@ @LIBS@ $(LIB_CLOCK_GETTIME)
 
 EXTRA_DIST = css.l css.c css_.c build_info.c.in
 
+if DPDKANS_IS_ENABLED
+DPDKANS_OBJ = ans_module.c
+endif
+
 bin_PROGRAMS = wget
 wget_SOURCES = connect.c convert.c cookies.c ftp.c	\
 		css_.c css-url.c	\
 		ftp-basic.c ftp-ls.c hash.c host.c hsts.c html-parse.c html-url.c	\
 		http.c init.c log.c main.c netrc.c progress.c ptimer.c	\
 		recur.c res.c retr.c spider.c url.c warc.c	\
-		utils.c exits.c build_info.c $(IRI_OBJ) $(METALINK_OBJ)	\
+		utils.c exits.c build_info.c $(IRI_OBJ) $(METALINK_OBJ)	$(DPDKANS_OBJ)\
 		css-url.h css-tokens.h connect.h convert.h cookies.h	\
 		ftp.h hash.h host.h hsts.h  html-parse.h html-url.h	\
 		http.h http-ntlm.h init.h log.h mswindows.h netrc.h	\
@@ -63,6 +67,20 @@ EXTRA_wget_SOURCES = iri.c
 LDADD = $(LIBOBJS) ../lib/libgnu.a
 AM_CPPFLAGS = -I$(top_builddir)/lib -I$(top_srcdir)/lib
 
+
+#add by ans_team: support wget-dpdkans 
+if DPDKANS_IS_ENABLED
+ANS_PATH = /home/work/dpdk-ans/
+RTE_SDK = /home/work/dpdk-stable-17.05.2
+RTE_TARGET = x86_64-native-linuxapp-gcc
+override ANSLIBS += -L$(RTE_SDK)/$(RTE_TARGET)/lib/
+override ANSLIBS += $(ANS_PATH)/librte_anssock/librte_anssock.a
+override ANSLIBS += -Wl,--whole-archive -Wl,-lrte_mbuf -Wl,-lrte_mempool_ring -Wl,-lrte_mempool -Wl,-lrte_ring -Wl,-lrte_eal -Wl,--no-whole-archive -Wl,-export-dynamic
+override ANSLIBS += -ldl -lrt -lpthread
+ANSINC = -I$(ANS_PATH)/librte_ans/include -I$(ANS_PATH)/librte_anssock/include -I$(ANS_PATH)/include
+override LDADD += $(ANSLIBS)
+override AM_CPPFLAGS += $(ANSINC) -DDPDKANS -g
+endif
 
 ../lib/libgnu.a:
 	cd ../lib && $(MAKE) $(AM_MAKEFLAGS)
