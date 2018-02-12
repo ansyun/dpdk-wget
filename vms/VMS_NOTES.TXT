@@ -1,0 +1,141 @@
+                                                27 September 2009.  SMS.
+
+                          Wget 1.12.X for VMS
+                          ===================
+
+------------------------------------------------------------------------
+
+   Beginning with Wget version 1.12.X, VMS support is included in the
+main Wget source kit.  This note describes the VMS-specific details
+involved in building and using Wget on VMS.
+
+------------------------------------------------------------------------
+
+   Built and tested (slightly) in these environments:
+
+OpenVMS Alpha V7.3-2, HP C V7.3-009, TCPIP V5.4 - ECO 6
+
+OpenVMS IA64 V8.3, HP C V7.3-018, TCPIP V5.6.
+
+OpenVMS VAX V7.3, Compaq C V6.4-005, TCPIP V5.1.
+
+(__CRTL_VER >= 70000000 is probably required.)
+
+------------------------------------------------------------------------
+
+      Instructions
+      ------------
+
+   Extract the files from the distribution kit.
+
+      Note:
+      The Wget builders should work on either an ODS2 or ODS5 disk,
+      although any original multi-dot file names will be adjusted for
+      storage on an ODS2 disk when they are extracted from the kit
+      archive.  Depending on the tools used, an original file named
+      "a.b.c" may be extracted as "A.B_C" ("dot-under" form) or "A_B.C"
+      ("under-dot" form), but the builders should work either way.
+
+      The source kit may contain one or more files in the "tests"
+      directory which have names which are too long for an ODS2 disk. 
+      They will cause errors when the kit is unpacked, but these files
+      are not required on VMS.
+
+   When starting with an official "tar" source kit, the downloaded
+bzip2- or gzip-compressed "tar" archive must be expanded using a bzip2
+or gzip program, and then a program like VMSTAR can be used to extract
+the source tree.  The official source kits tend to have multi-dot file
+names, so the exact file names to use in these steps will depend on how
+the kit was downloaded, whether the work is done on an ODS2 or an ODS5
+disk, and so on.  Thus, the example commands shown below may need some
+adjustment to work in different environments. For example, starting with
+an official ".tar.bz2" kit named "wget-1_12_X_tar.bz2":
+
+      bzip2 -d wget-1_12_X_tar.bz2
+      vmstar xf wget-1_12_X_tar
+
+Or, starting with a Zip archive named "wget-1_12_X.zip":
+
+      unzip wget-1_12_X.zip
+
+   The MMS/MMK builders typically need some help from the user to enable
+the desired optional features, and/or to deal with differences between
+MMK and MMS features.
+
+   The builder options (MMS/MMK macros) are described in the main
+builder file, "[.vms]descrip.mms".  Normally, "DASHD=1" is specified, to
+enable the "-d" ("--debug") option.  On a reasonably modern non-VAX
+system, specify "LARGE=1" to enable large-file support.  If HTTPS
+support is desired, then specify either "HPSSL=1" (to use HP's SSL
+product) or "OSSL=1" (to use OpenSSL).
+
+   MMK or an old version of MMS may need a definition of
+"MMSDESCRIPTION_FILE".  An error message should explain this, if needed.
+
+   On non-VAX systems, the C compiler may emit some %CC-I-INTCONSTTRUNC
+complaints when compiling "[.src]hash.c", but these should be harmless.
+
+   Executables in VMS kits are normally built using "DASHD=1" and
+"LARGE=1" (except VAX), and with no HTTPS (SSL) support.  Output from
+"wget --version" should reveal which SSL product was used to build Wget. 
+"-https" implies no SSL.  "+https" with "-openssl" implies HP SSL, and
+"+https" with "+openssl" implies OpenSSL.
+
+   Example build commands:
+
+      SET DEFAULT [.wget-1_12_X_vms.vms]    ! Required.
+
+      MMS CLEAN                             ! Delete all product files
+                                            ! for the current (small-file)
+                                            ! architecture.
+
+      MMS /MACRO = LARGE=1 CLEAN            ! Delete all product files
+                                            ! for the current (large-file)
+                                            ! architecture.
+
+      MMS CLEAN_ALL                         ! Delete all product files
+                                            ! for all architectures.
+
+      MMS /MACRO = (DASHD=1, LARGE=1)       ! Large-file, no-SSL build.
+
+      MMS /MACRO = (DASHD=1, LARGE=1, HPSSL=1)  ! Add HTTPS support using
+                                                ! HP SSL.
+
+      MMS /MACRO = (DASHD=1, LARGE=1, OSSL=1)   ! Add HTTPS support using
+                                                ! OpenSSL.
+
+      DFLT = F$ENVIRONMENT( "DEFAULT")          ! Basic MMK build, with
+      MMK /MACRO = (MMSDESCRIPTION_FILE='DFLT') ! explicit definition of
+      DELETE /SYMBOL DFLT                       ! MMSDESCRIPTION_FILE.
+                                                ! ("dev:[dir]" is enough.)
+
+      MMS HELP                              ! Create a help library.
+                                            ! (Optional.  See below.)
+                                            
+
+
+   Set the symbol for the foreign command:
+
+      WGET :== $ actual_device:[actual.directory]WGET.EXE
+
+   A very basic VMS HELP file is supplied in [.VMS]WGET.HLP.  To be
+used, it must be added to a HELP library, either an existing library or
+one just for Wget.  As shown in the example above, a new Wget help
+library may be created using the MMS/MMK target "HELP".
+
+   When a new HELP library is created, a logical name "HLP$LIBRARY_n"
+may be defined to allow the HELP utility to find it.  See "HELP HELP
+/USERLIBRARY" for details.
+
+   Try to read the original documentation to learn how to use Wget.  The
+principal differences in this VMS adaptation are:
+
+   The "-b" ("background") option is ignored.  ("-b" uses "fork()".)
+
+   Excess dots are replaced by underscores in URL-derived file
+specifications on ODS2 file systems.  For example, on a UNIX system, the
+URL "ftp://ftp.anywhere.org/x.y.z/a.b.c" could produce the local file
+"ftp.anywhere.org/x.y.z/a.b.c".  With this VMS adaptation, the local
+ODS2 file would be "[.FTP_ANYWHERE_ORG.X_Y_Z]A_B.C".  On an ODS5 file
+system, the file would be [.ftp^.anywhere^.org.x^.y^.z]a^.b.c".
+
