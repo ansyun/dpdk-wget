@@ -75,6 +75,11 @@ as that of the covered work.  */
 # endif
 #endif /* ENABLE_IPV6 */
 
+#ifdef DPDKANS
+/*add by ans_team, support for epoll*/
+#include <sys/epoll.h>
+#endif
+
 /* Fill SA as per the data in IP and PORT.  SA shoult point to struct
    sockaddr_storage if ENABLE_IPV6 is defined, to struct sockaddr_in
    otherwise.  */
@@ -677,6 +682,40 @@ retryable_socket_connect_error (int err)
 int
 select_fd (int fd, double maxtime, int wait_for)
 {
+#ifdef DPDKANS
+	/*add by ans_team, support for epoll*/
+	int epfd = epoll_create(256);    //可处理的最大句柄数256个  
+    if(epfd < 0)  
+    {  
+        printf("epoll_create error!\n");  
+        return -1;  
+    }
+	else
+		printf("DPDK-ANS:epoll_create ok !!!\n");
+
+	struct epoll_event ee;
+    int op = EPOLL_CTL_ADD;
+    ee.events = 0;
+	if (wait_for & WAIT_FOR_READ)
+    	ee.events |= EPOLLIN;
+	if (wait_for & WAIT_FOR_WRITE)
+    	ee.events |= EPOLLOUT;
+    ee.data.u64 = 0; /* avoid valgrind warning */
+    ee.data.fd = fd;
+    if (epoll_ctl(epfd,op,fd,&ee) == -1) 
+	{
+		printf("epoll_ctl error!\n");  
+        return -1; 
+	}
+	else
+		printf("DPDK-ANS:epoll_ctl ok,fd = %d !!!\n", fd);
+
+	int retval = 0;
+	struct epoll_event revs[64]; 
+    retval = epoll_wait(epfd,revs,64,(int)maxtime);
+    return retval;
+#else
+
   fd_set fdset;
   fd_set *rd = NULL, *wr = NULL;
   struct timeval tmout;
@@ -704,6 +743,8 @@ select_fd (int fd, double maxtime, int wait_for)
   while (result < 0 && errno == EINTR);
 
   return result;
+
+#endif
 }
 
 /* Return true iff the connection to the remote site established

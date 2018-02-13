@@ -1154,6 +1154,7 @@ There is NO WARRANTY, to the extent permitted by law.\n"), stdout) < 0)
 const char *program_name; /* Needed by lib/error.c. */
 const char *program_argstring; /* Needed by wget_warc.c. */
 
+
 int
 main (int argc, char **argv)
 {
@@ -1185,6 +1186,11 @@ main (int argc, char **argv)
 #ifdef WINDOWS
   /* Drop extension (typically .EXE) from executable filename. */
   windows_main ((char **) &exec_name);
+#endif
+
+#ifdef DPDKANS
+  /* ans module */
+  ans_mod_init();
 #endif
 
   /* Construct the arguments string. */
