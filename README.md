@@ -2,7 +2,7 @@
 Fork from official wget-v1.17.1, and run on the dpdk user space TCP/IP stack(ANS).
 
 Compile:
-Flowing the step to get dpdk-wget (maybe ubuntu 16.04 is the best choice,since ans recommend this)
+Flowing the step to get dpdk-wget (maybe ubuntu 16.04 is the best choice,cuz ans recommend this)
 
 1)read the original README.checkout, and  make sure the complie environment is correct, such as autoconf , automake, flex ...
 
