@@ -10,9 +10,11 @@ Flowing the step to get dpdk-wget (maybe ubuntu 16.04 is the best choice,cuz ans
 
 3)run with ./configure with_dpdkans=yes
 
+before make wget, do : export RTE_ANS=/home/work/dpdk-ans
 4)make clean;make
 
 5)finally, the new wget is done in src/wget
+
 
 Run:
 1) first should run ans , you know the new wget is based on ans, ans is the tcp-ip stack of wget, and wget use the socket and epoll from ans
