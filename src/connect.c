@@ -235,7 +235,20 @@ static void
 connect_with_timeout_callback (void *arg)
 {
   struct cwt_context *ctx = (struct cwt_context *)arg;
+#ifdef DPDKANS
+  int try_connect_count = 5;
+  while (try_connect_count-- && 
+  	     connect (ctx->fd, ctx->addr, ctx->addrlen) < 0 && 
+  	     errno == EINPROGRESS)
+  {
+    sleep(1);
+    if (try_connect_count <= 0)
+		ctx->result = -1;
+  }
+
+#else
   ctx->result = connect (ctx->fd, ctx->addr, ctx->addrlen);
+#endif
 }
 
 /* Like connect, but specifies a timeout.  If connecting takes longer
@@ -704,16 +717,25 @@ select_fd (int fd, double maxtime, int wait_for)
     ee.data.fd = fd;
     if (epoll_ctl(epfd,op,fd,&ee) == -1) 
 	{
-		printf("epoll_ctl error!\n");  
+		printf("epoll_ctl add error!\n");  
         return -1; 
 	}
 	else
-		printf("DPDK-ANS:epoll_ctl ok,fd = %d !!!\n", fd);
+		printf("DPDK-ANS:epoll_ctl add ok,fd = %d !!!\n", fd);
 
 	int retval = 0;
 	struct epoll_event revs[64]; 
     retval = epoll_wait(epfd,revs,64,(int)maxtime);
-    return retval;
+	if (0 == retval)
+        return -1; // timeout
+    else if (0 > retval)
+        return retval; // eroor
+    else
+    {
+        epoll_ctl(epfd,EPOLL_CTL_DEL,fd,&ee);
+        printf("RECV a epoll !!!\n");
+        return retval;
+    }	
 #else
 
   fd_set fdset;

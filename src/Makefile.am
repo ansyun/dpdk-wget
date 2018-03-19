@@ -70,9 +70,10 @@ AM_CPPFLAGS = -I$(top_builddir)/lib -I$(top_srcdir)/lib
 
 #add by ans_team: support wget-dpdkans 
 if DPDKANS_IS_ENABLED
-ANS_PATH = /home/work/dpdk-ans/
-RTE_SDK = /home/work/dpdk-stable-17.05.2
-RTE_TARGET = x86_64-native-linuxapp-gcc
+#ANS_PATH = /home/work/dpdk-ans/
+#RTE_SDK = /home/work/dpdk-stable-17.05.2
+#RTE_TARGET = x86_64-native-linuxapp-gcc
+ANS_PATH = $(RTE_ANS)
 override ANSLIBS += -L$(RTE_SDK)/$(RTE_TARGET)/lib/
 override ANSLIBS += $(ANS_PATH)/librte_anssock/librte_anssock.a
 override ANSLIBS += -Wl,--whole-archive -Wl,-lrte_mbuf -Wl,-lrte_mempool_ring -Wl,-lrte_mempool -Wl,-lrte_ring -Wl,-lrte_eal -Wl,--no-whole-archive -Wl,-export-dynamic
