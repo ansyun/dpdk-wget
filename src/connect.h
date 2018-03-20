@@ -36,6 +36,12 @@ as that of the covered work.  */
 
 /* Function declarations */
 
+#ifdef DPDKANS
+int ans_epfd_read(int epfd, int fd, char *buf, int bufsize, double timeout);
+int ans_epfd_add(int fd, int wait_for);
+int ans_epfd_del(int epfd);
+#endif
+
 /* Returned by connect_to_host when host name cannot be resolved.  */
 enum {
   E_HOST = -100

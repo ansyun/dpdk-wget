@@ -82,7 +82,7 @@
 /* 1: redis socket will go through opendp stack, 0: go through linux stack */
 int ans_sock_enable = 1; 
 
-int ansfd_debug_flag = 1;
+int ansfd_debug_flag = 0;
 
 #define ANS_FD_DEBUG( fmt, args...)  \
   do {                                                           \

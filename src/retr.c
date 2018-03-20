@@ -229,6 +229,15 @@ fd_read_body (const char *downloaded_filename, int fd, FILE *out, wgint toread, 
               FILE *out2)
 {
   int ret = 0;
+#ifdef DPDKANS
+  int ans_epfd = ans_epfd_add(fd, WAIT_FOR_READ);
+  if (ans_epfd <= 0)
+  {
+      printf("WGET-ANS:ans_epfd_add error!\n");
+      return -1;
+  }
+#endif
+
 #undef max
 #define max(a,b) ((a) > (b) ? (a) : (b))
   int dlbufsize = max (BUFSIZ, 8 * 1024);
@@ -364,7 +373,11 @@ fd_read_body (const char *downloaded_filename, int fd, FILE *out, wgint toread, 
                 }
             }
         }
+      #ifdef DPDKANS
+      ret = ans_epfd_read(ans_epfd, fd, dlbuf, rdsize, tmout);
+      #else
       ret = fd_read (fd, dlbuf, rdsize, tmout);
+      #endif
 
       if (progress_interactive && ret < 0 && errno == ETIMEDOUT)
         ret = 0;                /* interactive timeout, handled above */
@@ -439,6 +452,10 @@ fd_read_body (const char *downloaded_filename, int fd, FILE *out, wgint toread, 
     *qtywritten += sum_written;
 
   xfree (dlbuf);
+
+#ifdef DPDKANS
+  ans_epfd_del(ans_epfd);
+#endif
 
   return ret;
 }

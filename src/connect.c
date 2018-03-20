@@ -696,44 +696,47 @@ int
 select_fd (int fd, double maxtime, int wait_for)
 {
 #ifdef DPDKANS
-	/*add by ans_team, support for epoll*/
-	int epfd = epoll_create(256);    //可处理的最大句柄数256个  
-    if(epfd < 0)  
-    {  
-        printf("epoll_create error!\n");  
-        return -1;  
+    /*add by ans_team, support for epoll*/
+    /*really slow path, just compatible for select-based style code ..... and @fixme */
+    int ans_epfd = epoll_create(1);
+    if (ans_epfd < 0)
+    {
+        printf("WGET-ANS:epoll create error, ep number:%d ret=%d \n", 1, ans_epfd);
+        return -1;
     }
-	else
-		printf("DPDK-ANS:epoll_create ok !!!\n");
 
-	struct epoll_event ee;
+    int _timeout = (int)(maxtime * 1000);
+    struct epoll_event ee = {0};
     int op = EPOLL_CTL_ADD;
     ee.events = 0;
-	if (wait_for & WAIT_FOR_READ)
-    	ee.events |= EPOLLIN;
-	if (wait_for & WAIT_FOR_WRITE)
-    	ee.events |= EPOLLOUT;
+    if (wait_for & WAIT_FOR_READ)
+      ee.events |= EPOLLIN;
+    if (wait_for & WAIT_FOR_WRITE)
+      ee.events |= EPOLLOUT;
     ee.data.u64 = 0; /* avoid valgrind warning */
     ee.data.fd = fd;
-    if (epoll_ctl(epfd,op,fd,&ee) == -1) 
-	{
-		printf("epoll_ctl add error!\n");  
+    if (epoll_ctl(ans_epfd,op,fd,&ee) == -1) 
+    {
+	printf("epoll_ctl add error!\n");  
         return -1; 
-	}
-	else
-		printf("DPDK-ANS:epoll_ctl add ok,fd = %d !!!\n", fd);
+    }
 
-	int retval = 0;
-	struct epoll_event revs[64]; 
-    retval = epoll_wait(epfd,revs,64,(int)maxtime);
-	if (0 == retval)
+    int retval = 0;
+    struct epoll_event revs[64]; 
+    retval = epoll_wait(ans_epfd,revs,64,(int)_timeout);
+    if (0 == retval)
+    {
+        printf("epoll timeout within %d time, return -1\n", _timeout);
         return -1; // timeout
+    }
     else if (0 > retval)
+    {
+        printf("epoll error, ret:%d\n", retval);
         return retval; // eroor
+    }
     else
     {
-        epoll_ctl(epfd,EPOLL_CTL_DEL,fd,&ee);
-        printf("RECV a epoll !!!\n");
+        epoll_ctl(ans_epfd,EPOLL_CTL_DEL,fd,&ee);
         return retval;
     }	
 #else
@@ -965,6 +968,69 @@ poll_internal (int fd, struct transport_info *info, int wf, double timeout)
    BUF.  If TIMEOUT is non-zero, the operation aborts if no data is
    received after that many seconds.  If TIMEOUT is -1, the value of
    opt.timeout is used for TIMEOUT.  */
+
+#ifdef DPDKANS
+
+int ans_epfd_read(int epfd, int fd, char *buf, int bufsize, double timeout)
+{
+    struct transport_info *info;
+    LAZY_RETRIEVE_INFO (info);
+
+    int _timeout = (int)(timeout * 1000);
+    int retval = 0;
+    struct epoll_event revs[64];
+    retval = epoll_wait(epfd,revs,64,(int)_timeout);
+    if (0 == retval)
+    {
+        printf("epoll timeout within %d time, return -1\n", _timeout);
+        return -1; // timeout
+    }
+    else if (0 > retval)
+    {
+        printf("epoll error, ret:%d\n", retval);
+        return retval; // eroor
+    }
+
+    if (info && info->imp->reader)
+        return info->imp->reader (fd, buf, bufsize, info->ctx);
+    else
+        return sock_read (fd, buf, bufsize);
+}
+
+int ans_epfd_add(int fd, int wait_for)
+{
+    int epfd = epoll_create(1);
+    if (epfd < 0)
+    {
+        printf("WGET-ANS:epoll create error, ep number:%d ret=%d \n", 1, epfd);
+        return -1;
+    }
+
+    struct epoll_event ee = {0};
+    int op = EPOLL_CTL_ADD;
+    ee.events = 0;
+    if (wait_for & WAIT_FOR_READ)
+      ee.events |= EPOLLIN;
+    if (wait_for & WAIT_FOR_WRITE)
+      ee.events |= EPOLLOUT;
+    ee.data.u64 = 0; /* avoid valgrind warning */
+    ee.data.fd = fd;
+    if (epoll_ctl(epfd,op,fd,&ee) == -1)
+    {
+        printf("epoll_ctl add error!\n");
+        return -1;
+    }
+
+    return epfd;
+}
+
+int ans_epfd_del(int epfd)
+{
+    close(epfd);
+    return 0;
+}
+
+#endif
 
 int
 fd_read (int fd, char *buf, int bufsize, double timeout)
