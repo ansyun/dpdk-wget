@@ -10,7 +10,14 @@ Flowing the step to get dpdk-wget (maybe ubuntu 16.04 is the best choice,cuz ans
 
 3)run with ./configure with_dpdkans=yes
 
-before make wget, do : export RTE_ANS=/home/work/dpdk-ans
+before make wget, do these steps as the ANS project guide: 
+
+export RTE_ANS=/home/work/dpdk-ans
+
+export RTE_SDK=/home/work/dpdk-stable-17.05.2
+
+export RTE_TARGET=x86_64-native-linuxapp-gcc
+
 4)make clean;make
 
 5)finally, the new wget is done in src/wget
